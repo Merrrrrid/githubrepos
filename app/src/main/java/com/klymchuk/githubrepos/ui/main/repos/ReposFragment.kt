@@ -19,11 +19,8 @@ import com.klymchuk.githubrepos.ui.base.recyclerview.applyDiffUtil
 import com.klymchuk.githubrepos.ui.main.repos.list.ReposAdapter
 import com.klymchuk.githubrepos.ui.main.repos.list.ReposListItem
 import com.klymchuk.githubrepos.ui.main.repos.list.ReposListViewHolder
+import com.klymchuk.githubrepos.utils.*
 import com.klymchuk.githubrepos.utils.binding.viewBinding
-import com.klymchuk.githubrepos.utils.disableItemChangeAnimation
-import com.klymchuk.githubrepos.utils.gone
-import com.klymchuk.githubrepos.utils.logTag
-import com.klymchuk.githubrepos.utils.show
 
 
 class ReposFragment : BaseFragment(R.layout.repos_fragment) {
@@ -55,19 +52,13 @@ class ReposFragment : BaseFragment(R.layout.repos_fragment) {
 
         setHasOptionsMenu(true)
 
-        mBinding.repoListRecyclerView.setRecycledViewPool(RecyclerView.RecycledViewPool().apply {
-            setMaxRecycledViews(ReposAdapter.ViewType.REPOS, 20)
-        })
         mBinding.repoListRecyclerView.layoutManager = CustomLinearLayoutManager(requireContext())
         mBinding.repoListRecyclerView.adapter = mReposAdapter
         mBinding.repoListRecyclerView.disableItemChangeAnimation()
 
         mBinding.searchEditText.apply {
             addTextChangedListener(doOnTextChanged { text, _, _, _ ->
-                if (!text.isNullOrBlank())
-                    mViewModel.getSearchRepos(text.toString())
-                else
-                    mViewModel.onEmptySearchText()
+                mViewModel.onSearchTextChanged(text.toString())
             })
         }
 
@@ -93,6 +84,8 @@ class ReposFragment : BaseFragment(R.layout.repos_fragment) {
 
     private fun observeState() {
         mViewModel.state().observe(viewLifecycleOwner) { state ->
+
+            mBinding.searchEditText.setTextIfDistinct(state.searchText)
 
             if (shouldUpdateHistory(state)) {
                 mReposAdapter.applyDiffUtil(state.reposList)

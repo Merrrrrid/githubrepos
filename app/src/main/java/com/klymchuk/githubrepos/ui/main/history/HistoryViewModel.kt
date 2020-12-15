@@ -32,7 +32,7 @@ class HistoryViewModel @Inject constructor(
         val errorMessage: String = "",
     ) {
         fun hasReposItems(): Boolean {
-            return historyList.size > 1
+            return historyList.isNotEmpty()
         }
     }
 

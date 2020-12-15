@@ -27,6 +27,8 @@ class MainActivity : AppCompatActivity(), GlobalFragmentContext {
     lateinit var mRouter: Router
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val isProcessRestored = savedInstanceState != null
+        Reporter.appAction(logTag, "onCreate isProcessRestored: $isProcessRestored")
         (application as App).component!!.inject(this)
 
         super.onCreate(savedInstanceState)
@@ -36,7 +38,9 @@ class MainActivity : AppCompatActivity(), GlobalFragmentContext {
 
         mNavigator.observe(this, this, supportFragmentManager)
 
-        initNavigation()
+        if (!isProcessRestored) {
+            initNavigation()
+        }
 
         initUI()
 

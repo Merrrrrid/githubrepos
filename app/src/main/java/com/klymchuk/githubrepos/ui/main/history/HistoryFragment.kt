@@ -2,7 +2,11 @@ package com.klymchuk.githubrepos.ui.main.history
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Typeface
+import android.view.Menu
+import android.view.MenuInflater
 import android.view.MenuItem
+import android.widget.TextView
 import android.widget.Toast
 import com.klymchuk.githubrepos.R
 import com.klymchuk.githubrepos.databinding.HistoryFragmentBinding
@@ -65,6 +69,10 @@ class HistoryFragment : BaseFragment(R.layout.history_fragment) {
             }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        menu.clear()
     }
 
     //==============================================================================================

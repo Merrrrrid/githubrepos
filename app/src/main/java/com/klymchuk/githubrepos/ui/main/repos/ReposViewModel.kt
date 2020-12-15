@@ -1,6 +1,7 @@
 package com.klymchuk.githubrepos.ui.main.repos
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.klymchuk.githubrepos.data.db.entity.History
@@ -34,9 +35,10 @@ class ReposViewModel @Inject constructor(
         val isProgress: Boolean = false,
         val reposList: List<ReposListItem>,
         val errorMessage: String = "",
+        val searchText: String = "",
     ) {
         fun hasReposItems(): Boolean {
-            return reposList.size > 1
+            return reposList.isNotEmpty()
         }
     }
 
@@ -44,6 +46,9 @@ class ReposViewModel @Inject constructor(
     fun state(): LiveData<State> = mState
 
     init {
+
+        Log.e("@@", "init")
+
         mState = MutableLiveData(State(reposList = listOf()))
     }
 
@@ -79,7 +84,7 @@ class ReposViewModel @Inject constructor(
                 fullName = item.fullName,
                 description = item.description,
                 stargazersCount = item.stargazersCount,
-                inputTimeStamp = (System.currentTimeMillis()/1000).toString()
+                inputTimeStamp = (System.currentTimeMillis() / 1000).toString()
             )
         )
             .subscribeOn(Schedulers.io())
@@ -110,8 +115,20 @@ class ReposViewModel @Inject constructor(
         mState.value = oldState.copy(reposList = listOf())
     }
 
-    fun onHistoryButtonClicked(){
-        mMainCommands.enqueue{ mRouter.replace(Destinations.history(), modifierFade())}
+    fun onHistoryButtonClicked() {
+        mRouter.add(Destinations.history(), modifierFade())
+    }
+
+    fun onSearchTextChanged(text: String) {
+        val oldState = mState.value!!
+
+        if (oldState.searchText == text) return
+        mState.value = oldState.copy(searchText = text)
+
+        if (text.isNotBlank())
+            getSearchRepos(text)
+        else
+            onEmptySearchText()
     }
     //==============================================================================================
     // *** Utils ***
