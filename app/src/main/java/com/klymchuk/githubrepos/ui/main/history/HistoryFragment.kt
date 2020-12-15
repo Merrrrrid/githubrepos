@@ -51,6 +51,7 @@ class HistoryFragment : BaseFragment(R.layout.history_fragment) {
         )
 
         setHasOptionsMenu(true)
+        mViewModel.initBackButton()
 
         mBinding.historyRecyclerView.layoutManager = CustomLinearLayoutManager(requireContext())
         mBinding.historyRecyclerView.adapter = mHistoryAdapter

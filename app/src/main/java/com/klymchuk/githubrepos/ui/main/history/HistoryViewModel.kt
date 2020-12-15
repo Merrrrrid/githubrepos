@@ -41,7 +41,6 @@ class HistoryViewModel @Inject constructor(
 
     init {
         mState = MutableLiveData(State(historyList = listOf()))
-        mMainCommands.enqueue { it.showBackButton() }
     }
 
     fun getHistory(){
@@ -73,6 +72,10 @@ class HistoryViewModel @Inject constructor(
     fun onToolbarBackButtonClicked(){
         mMainCommands.enqueue { it.hideBackButton() }
         mRouter.back()
+    }
+
+    fun initBackButton(){
+        mMainCommands.enqueue { it.showBackButton() }
     }
 
     //==============================================================================================
