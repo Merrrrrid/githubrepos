@@ -1,8 +1,10 @@
 package com.klymchuk.githubrepos.data.repositories
 
 import com.klymchuk.githubrepos.data.db.AppDatabase
-import com.klymchuk.githubrepos.data.db.model.User
+import com.klymchuk.githubrepos.data.db.entity.History
+import com.klymchuk.githubrepos.data.db.entity.User
 import io.reactivex.Completable
+import io.reactivex.Single
 import javax.inject.Inject
 
 class DatabaseRepository @Inject constructor(
@@ -13,6 +15,16 @@ class DatabaseRepository @Inject constructor(
         return Completable.fromAction {
             mDatabase.userDao().insertUser(user)
         }
+    }
+
+    fun insertHistoryItem(history: History): Completable {
+        return Completable.fromAction {
+            mDatabase.historyDao().insertHistory(history)
+        }
+    }
+
+    fun getHistory(): Single<List<History>> {
+        return mDatabase.historyDao().getHistory()
     }
 
 }

@@ -3,7 +3,7 @@ package com.klymchuk.githubrepos.ui.login
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.klymchuk.githubrepos.data.db.model.User
+import com.klymchuk.githubrepos.data.db.entity.User
 import com.klymchuk.githubrepos.data.repositories.DatabaseRepository
 import com.klymchuk.githubrepos.data.repositories.NetworkRepository
 import com.klymchuk.githubrepos.ui.base.fragment.BaseViewModel
@@ -18,13 +18,13 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 
 @Singleton
-class MainViewCommandProcessor @Inject constructor() : ViewCommandProcessor<LoginActivity>()
+class LoginViewCommandProcessor @Inject constructor() : ViewCommandProcessor<LoginActivity>()
 
 @Singleton
 class LoginActivityViewModel @Inject constructor(
     private val mDatabaseRepository: DatabaseRepository,
     private val mNetworkRepository: NetworkRepository,
-    private val mCommands: MainViewCommandProcessor,
+    private val mCommands: LoginViewCommandProcessor,
 ) : BaseViewModel() {
 
     private val logTag = logTag()
@@ -94,7 +94,7 @@ class LoginActivityViewModel @Inject constructor(
 
         val oldState = mState.value!!
         mState.value = oldState.copy(isProgress = true)
-        val disposable: Disposable = mDatabaseRepository.insertUser(User(token = "111"))
+        val disposable: Disposable = mDatabaseRepository.insertUser(User(token = "bearer ${oldState.token}"))
             .subscribeOn(Schedulers.io())
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())

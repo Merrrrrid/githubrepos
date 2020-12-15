@@ -1,27 +1,23 @@
-package com.klymchuk.githubrepos.ui.main.repos
+package com.klymchuk.githubrepos.ui.main.history
 
 import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.klymchuk.githubrepos.data.db.entity.History
-import com.klymchuk.githubrepos.data.network.model.repos.ReposItem
 import com.klymchuk.githubrepos.data.repositories.DatabaseRepository
 import com.klymchuk.githubrepos.data.repositories.NetworkRepository
-import com.klymchuk.githubrepos.navigation.Destinations
 import com.klymchuk.githubrepos.navigation.Router
-import com.klymchuk.githubrepos.navigation.modifierFade
 import com.klymchuk.githubrepos.ui.MainViewCommandProcessor
 import com.klymchuk.githubrepos.ui.base.commands.enqueue
 import com.klymchuk.githubrepos.ui.base.fragment.BaseViewModel
-import com.klymchuk.githubrepos.ui.main.repos.list.ReposListItem
-import com.klymchuk.githubrepos.utils.Reporter
+import com.klymchuk.githubrepos.ui.main.history.list.HistoryItem
 import com.klymchuk.githubrepos.utils.logTag
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import javax.inject.Inject
 
-class ReposViewModel @Inject constructor(
+class HistoryViewModel @Inject constructor(
     private val mRouter: Router,
     private val mDatabaseRepository: DatabaseRepository,
     private val mNetworkRepository: NetworkRepository,
@@ -32,11 +28,11 @@ class ReposViewModel @Inject constructor(
 
     data class State(
         val isProgress: Boolean = false,
-        val reposList: List<ReposListItem>,
+        val historyList: List<HistoryItem>,
         val errorMessage: String = "",
     ) {
         fun hasReposItems(): Boolean {
-            return reposList.size > 1
+            return historyList.size > 1
         }
     }
 
@@ -44,50 +40,20 @@ class ReposViewModel @Inject constructor(
     fun state(): LiveData<State> = mState
 
     init {
-        mState = MutableLiveData(State(reposList = listOf()))
+        mState = MutableLiveData(State(historyList = listOf()))
+        mMainCommands.enqueue { it.showBackButton() }
     }
 
-    fun getSearchRepos(queryString: String) {
-        Reporter.appAction(logTag, "getSearchRepos")
-
+    fun getHistory(){
         val oldState = mState.value!!
         mState.value = oldState.copy(isProgress = true)
-
-        val disposable: Disposable = mNetworkRepository.getSearchReposResult(1, queryString)
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { result ->
-                    mState.value = oldState.copy(reposList = reposToRecycleItem(result.reposItems))
-                },
-                { error ->
-                    mState.value = oldState.copy(errorMessage = error.message.toString())
-                }
-            )
-        mCompositeDisposable.add(disposable)
-    }
-
-    fun saveHistoryItem(item: ReposListItem) {
-        Reporter.appAction(logTag, "saveHistoryItem")
-
-        val oldState = mState.value!!
-        mState.value = oldState.copy(isProgress = true)
-        val disposable: Disposable = mDatabaseRepository.insertHistoryItem(
-            History(
-                id = item.id,
-                htmlUrl = item.htmlUrl,
-                fullName = item.fullName,
-                description = item.description,
-                stargazersCount = item.stargazersCount,
-                inputTimeStamp = (System.currentTimeMillis()/1000).toString()
-            )
-        )
+        val disposable: Disposable = mDatabaseRepository.getHistory()
             .subscribeOn(Schedulers.io())
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
                 {
-                    mState.value = oldState.copy(isProgress = false)
+                    mState.value = oldState.copy(historyList = historyToHistoryItem(it))
                 },
                 { error ->
                     mState.value = oldState.copy(isProgress = false, errorMessage = error.message.toString())
@@ -95,8 +61,7 @@ class ReposViewModel @Inject constructor(
         mCompositeDisposable.add(disposable)
     }
 
-    fun onListItemClick(item: ReposListItem) {
-        saveHistoryItem(item)
+    fun onListItemClick(item: HistoryItem) {
         mMainCommands.enqueue { it.openLinkInBrowser(Uri.parse(item.htmlUrl)) }
     }
 
@@ -105,32 +70,30 @@ class ReposViewModel @Inject constructor(
         mState.value = oldState.copy(errorMessage = "")
     }
 
-    fun onEmptySearchText() {
-        val oldState = mState.value!!
-        mState.value = oldState.copy(reposList = listOf())
+    fun onToolbarBackButtonClicked(){
+        mMainCommands.enqueue { it.hideBackButton() }
+        mRouter.back()
     }
 
-    fun onHistoryButtonClicked(){
-        mMainCommands.enqueue{ mRouter.replace(Destinations.history(), modifierFade())}
-    }
     //==============================================================================================
     // *** Utils ***
     //==============================================================================================
 
-    private fun reposToRecycleItem(reposItemList: List<ReposItem>): List<ReposListItem> {
-        val list: MutableList<ReposListItem> = mutableListOf()
+    private fun historyToHistoryItem(historyList: List<History>): List<HistoryItem> {
+        val list: MutableList<HistoryItem> = mutableListOf()
 
-        reposItemList.forEach {
+        historyList.forEach {
             list.add(
-                ReposListItem(
+                HistoryItem(
                     id = it.id,
                     htmlUrl = it.htmlUrl,
                     fullName = it.fullName,
-                    description = it.description.orEmpty(),
+                    description = it.description,
                     stargazersCount = it.stargazersCount,
                 )
             )
         }
         return list
     }
+
 }

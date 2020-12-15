@@ -1,5 +1,7 @@
 package com.klymchuk.githubrepos.ui
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.klymchuk.githubrepos.App
@@ -25,9 +27,7 @@ class MainActivity : AppCompatActivity(), GlobalFragmentContext {
     lateinit var mRouter: Router
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         (application as App).component!!.inject(this)
-
 
         super.onCreate(savedInstanceState)
 
@@ -97,8 +97,6 @@ class MainActivity : AppCompatActivity(), GlobalFragmentContext {
     private lateinit var mBinding: ActivityMainBinding
 
     private fun initUI() {
-        initButtonClickListeners()
-
         mNavigator.finishAppListener = object : Navigator.FinishAppListener {
             override fun onFinish(): Boolean {
 
@@ -106,22 +104,8 @@ class MainActivity : AppCompatActivity(), GlobalFragmentContext {
             }
         }
 
-//        mBinding.drawerLayout.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
-//            override fun onDrawerOpened(drawerView: View) {
-//                hideKeyboard()
-//            }
-//        })
         observeState()
     }
-
-    private fun initButtonClickListeners() {
-//        mBinding.navButtons.newInventoryButton.setOnClickListener { mViewModel.onClickNewInventory() }
-//        mBinding.navButtons.endInventoryButton.setOnClickListener { mViewModel.onClickEndInventory() }
-//        mBinding.navButtons.settings.setOnClickListener { mViewModel.onClickNavSettings() }
-//        mBinding.navButtons.inputHistory.setOnClickListener { mViewModel.onClickNavInputHistory() }
-//        mBinding.navButtons.input.setOnClickListener { mViewModel.onClickNavInput() }
-    }
-
 
     //==============================================================================================
     // *** State ***
@@ -150,24 +134,21 @@ class MainActivity : AppCompatActivity(), GlobalFragmentContext {
         return state.isProgress != mLastConsumedState?.isProgress
     }
 
-
-    //==============================================================================================
-    // *** Side Menu (NavDrawer) ***
-    //==============================================================================================
-    fun openDrawer() {
-        hideKeyboard()
-//        mBinding.drawerLayout.openDrawer(GravityCompat.START)
-    }
-
-    fun closeDrawer() {
-//        mBinding.drawerLayout.closeDrawer(GravityCompat.START)
-    }
-
-
     //==============================================================================================
     // *** Commands ***
     //==============================================================================================
 
+    fun openLinkInBrowser(url : Uri){
+        startActivity(Intent(Intent.ACTION_VIEW, url))
+    }
+
+    fun showBackButton(){
+       supportActionBar?.setDisplayHomeAsUpEnabled(true)
+    }
+
+    fun hideBackButton(){
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
+    }
 
     //==============================================================================================
     // *** Utils ***

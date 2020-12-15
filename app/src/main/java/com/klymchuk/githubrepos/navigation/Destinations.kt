@@ -2,23 +2,21 @@ package com.klymchuk.githubrepos.navigation
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
-import com.klymchuk.githubrepos.ui.main.login.LoginFragment
+import com.klymchuk.githubrepos.ui.main.history.HistoryFragment
 import com.klymchuk.githubrepos.ui.main.repos.ReposFragment
 
 object Destinations {
-
-    fun login() = object : Destination {
-        override fun id() = "Login"
-        override fun newFragment() = LoginFragment()
-    }
 
     fun repos() = object : Destination {
         override fun id() = "Repos"
         override fun newFragment() = ReposFragment()
     }
 
+    fun history() = object : Destination {
+        override fun id() = "History"
+        override fun newFragment() = HistoryFragment()
+    }
 }
-
 
 //==============================================================================================
 // *** Extensions ***

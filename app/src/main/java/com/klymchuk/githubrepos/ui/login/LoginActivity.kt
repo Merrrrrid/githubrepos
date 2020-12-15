@@ -83,6 +83,7 @@ class LoginActivity : AppCompatActivity(), GlobalFragmentContext {
         }
 
         observeState()
+        navigateToMainMenu() //todo test only
     }
 
     //==============================================================================================

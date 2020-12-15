@@ -3,10 +3,10 @@ package com.klymchuk.githubrepos.data.db
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
-import com.klymchuk.githubrepos.data.db.model.User
+import com.klymchuk.githubrepos.data.db.entity.User
 
 @Dao
-interface UserDao{
+interface UserDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertUser(user: User)
