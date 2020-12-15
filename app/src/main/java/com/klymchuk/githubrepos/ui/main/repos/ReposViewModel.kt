@@ -1,7 +1,6 @@
 package com.klymchuk.githubrepos.ui.main.repos
 
 import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.klymchuk.githubrepos.data.db.entity.History
@@ -17,6 +16,7 @@ import com.klymchuk.githubrepos.ui.base.fragment.BaseViewModel
 import com.klymchuk.githubrepos.ui.main.repos.list.ReposListItem
 import com.klymchuk.githubrepos.utils.Reporter
 import com.klymchuk.githubrepos.utils.logTag
+import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
@@ -46,10 +46,19 @@ class ReposViewModel @Inject constructor(
     fun state(): LiveData<State> = mState
 
     init {
-
-        Log.e("@@", "init")
-
         mState = MutableLiveData(State(reposList = listOf()))
+    }
+
+    private fun getObservable(queryString: String): Observable<List<ReposItem>> {
+        return Observable.zip(
+            mNetworkRepository.getSearchReposResult(1, queryString),
+            mNetworkRepository.getSearchReposResult(2, queryString),
+            { t, u ->
+                val reposItems = mutableListOf<ReposItem>()
+                reposItems.addAll(t.reposItems)
+                reposItems.addAll(u.reposItems)
+                reposItems
+            })
     }
 
     fun getSearchRepos(queryString: String) {
@@ -58,12 +67,12 @@ class ReposViewModel @Inject constructor(
         val oldState = mState.value!!
         mState.value = oldState.copy(isProgress = true)
 
-        val disposable: Disposable = mNetworkRepository.getSearchReposResult(1, queryString)
+        val disposable: Disposable = getObservable(queryString)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
                 { result ->
-                    mState.value = oldState.copy(reposList = reposToRecycleItem(result.reposItems))
+                    mState.value = oldState.copy(reposList = reposToRecycleItem(result))
                 },
                 { error ->
                     mState.value = oldState.copy(errorMessage = error.message.toString())
