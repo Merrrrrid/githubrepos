@@ -4,6 +4,7 @@ import android.app.Application
 import com.klymchuk.githubrepos.di.AppComponent
 import com.klymchuk.githubrepos.di.DaggerAppComponent
 import com.klymchuk.githubrepos.utils.lifecycle.addLifecycleLogger
+import com.klymchuk.githubrepos.utils.network.NetworkMonitor
 
 class App : Application() {
 
@@ -22,6 +23,13 @@ class App : Application() {
             it.context(this)
         }.build()
 
+        NetworkMonitor(this).startNetworkCallback()
+
         addLifecycleLogger()
+    }
+
+    override fun onTerminate(){
+        super.onTerminate()
+        NetworkMonitor(this).stopNetworkCallback()
     }
 }

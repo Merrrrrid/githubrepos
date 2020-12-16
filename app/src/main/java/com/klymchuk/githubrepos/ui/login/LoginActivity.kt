@@ -4,13 +4,17 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.klymchuk.githubrepos.App
 import com.klymchuk.githubrepos.BuildConfig
 import com.klymchuk.githubrepos.databinding.ActivityLoginBinding
 import com.klymchuk.githubrepos.ui.MainActivity
 import com.klymchuk.githubrepos.ui.base.interfaces.GlobalFragmentContext
-import com.klymchuk.githubrepos.utils.*
+import com.klymchuk.githubrepos.utils.Reporter
+import com.klymchuk.githubrepos.utils.gone
+import com.klymchuk.githubrepos.utils.logTag
+import com.klymchuk.githubrepos.utils.show
 import javax.inject.Inject
 
 
@@ -78,12 +82,12 @@ class LoginActivity : AppCompatActivity(), GlobalFragmentContext {
     private lateinit var mBinding: ActivityLoginBinding
 
     private fun initUI() {
-        mBinding.loginLabel.setOnClickListener {
+        mBinding.loginButton.setOnClickListener {
             mViewModel.onLoginButtonClicked()
         }
 
+        mViewModel.checkUserInDBOnStart()
         observeState()
-        navigateToMainMenu() //todo test only
     }
 
     //==============================================================================================
@@ -108,13 +112,31 @@ class LoginActivity : AppCompatActivity(), GlobalFragmentContext {
             }
 
             if (state.token != "" && mLastConsumedState?.token != state.token) mViewModel.saveUserToken()
-            mLastConsumedState = state
 
+            if (state.userFromDB?.token != null && state.userFromDB.token.isNotEmpty()) {
+                navigateToMainMenu()
+            }
+            if (shouldShowError(state))
+                showErrorMessage(state.errorMessage)
+
+            mLastConsumedState = state
         }
     }
 
     private fun shouldUpdateProgress(state: LoginActivityViewModel.State): Boolean {
         return state.isProgress != mLastConsumedState?.isProgress
+    }
+
+    private fun shouldShowError(state: LoginActivityViewModel.State): Boolean {
+        if (state.errorMessage.isBlank()) return false
+        if (mLastConsumedState == null) return true
+
+        return mLastConsumedState?.errorMessage != state.errorMessage
+    }
+
+    private fun showErrorMessage(errorMessage: String) {
+        Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show()
+        mViewModel.errorMessageShown()
     }
 
     //==============================================================================================
@@ -139,6 +161,7 @@ class LoginActivity : AppCompatActivity(), GlobalFragmentContext {
         Reporter.appAction(logTag, "navigateToMainMenu")
 
         startActivity(Intent(this, MainActivity::class.java))
+        finish()
     }
 
     fun navigateToGitHubLogin() {
@@ -147,9 +170,9 @@ class LoginActivity : AppCompatActivity(), GlobalFragmentContext {
         startActivity(
             Intent(
                 Intent.ACTION_VIEW,
-                //todo refactor
                 Uri.parse("https://github.com/login/oauth/authorize?client_id=${BuildConfig.CLIENT_ID}&redirect_uri=${BuildConfig.AUTHORIZATION_CALLBACK_URL}")
             )
         )
     }
+
 }

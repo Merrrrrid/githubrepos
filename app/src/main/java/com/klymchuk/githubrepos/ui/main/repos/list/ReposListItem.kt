@@ -9,6 +9,7 @@ data class ReposListItem(
     val fullName: String,
     val description: String,
     val stargazersCount: Int,
+    val isSeen: Boolean,
 ) : RecyclerViewItem {
 
     override fun getViewType() = ReposAdapter.ViewType.REPOS

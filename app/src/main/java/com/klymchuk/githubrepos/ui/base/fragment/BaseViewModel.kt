@@ -14,11 +14,6 @@ open class BaseViewModel : ViewModel() {
 
     val mCompositeDisposable: CompositeDisposable = CompositeDisposable()
 
-    /**
-     * Unique id tied to fragment & ViewModel.
-     * Created by [Destination.toId] method,
-     * survives "config changes" and "process death".
-     */
     protected lateinit var mId: String
 
     init {
@@ -26,10 +21,6 @@ open class BaseViewModel : ViewModel() {
         mViewModelTracker = App.instance.component!!.provideViewModelTracker()
     }
 
-    /**
-     * Should be called only once, right after instantiation.
-     * Dagger doesn't support runtime args, so pass id manually, via setter
-     */
     fun setId(id: String) {
         Logger.d(logTag, "[VM] setId $id hash: ${hashCode()}")
         mId = id

@@ -2,7 +2,6 @@ package com.klymchuk.githubrepos.ui.main.repos
 
 import android.content.Context
 import android.graphics.Typeface
-import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -25,13 +24,14 @@ import com.klymchuk.githubrepos.utils.binding.viewBinding
 
 class ReposFragment : BaseFragment(R.layout.repos_fragment) {
 
-    private val logTag = logTag()
-
     override fun onAttach(context: Context) {
         super.onAttach(context)
         mViewModel = newViewModelWithArgs()
+    }
 
-
+    override fun onDestroyView() {
+        mLastConsumedState = null
+        super.onDestroyView()
     }
 
     //==============================================================================================
@@ -45,16 +45,32 @@ class ReposFragment : BaseFragment(R.layout.repos_fragment) {
         mReposAdapter = ReposAdapter(
             contractRepos = object : ReposListViewHolder.Contract {
                 override fun onClickItem(item: ReposListItem) {
-                    mViewModel.onListItemClick(item)
+                    if (mLastConsumedState != null && !mLastConsumedState!!.isProgress)
+                        mViewModel.onListItemClick(item)
                 }
             },
         )
 
         setHasOptionsMenu(true)
 
-        mBinding.repoListRecyclerView.layoutManager = CustomLinearLayoutManager(requireContext())
+        //RecyclerView
+        val layoutManager = CustomLinearLayoutManager(requireContext())
+        mBinding.repoListRecyclerView.layoutManager = layoutManager
         mBinding.repoListRecyclerView.adapter = mReposAdapter
         mBinding.repoListRecyclerView.disableItemChangeAnimation()
+        mBinding.repoListRecyclerView.setRecycledViewPool(RecyclerView.RecycledViewPool().apply {
+            setMaxRecycledViews(ReposAdapter.ViewType.REPOS, 20)
+        })
+        mBinding.repoListRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                val visibleItemCount = layoutManager.childCount
+                val totalItemCount = layoutManager.itemCount
+                val pastVisibleItems = layoutManager.findFirstVisibleItemPosition()
+                if (visibleItemCount + pastVisibleItems >= totalItemCount) {
+                    mViewModel.onScrolledToEnd()
+                }
+            }
+        })
 
         mBinding.searchEditText.apply {
             addTextChangedListener(doOnTextChanged { text, _, _, _ ->
@@ -67,14 +83,7 @@ class ReposFragment : BaseFragment(R.layout.repos_fragment) {
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         menu.clear()
-        val cancelTV = TextView(activity)
-        cancelTV.text = "History"
-        cancelTV.setTextColor(requireContext().getColor(R.color.white))
-        cancelTV.setOnClickListener{ mViewModel.onHistoryButtonClicked()}
-        cancelTV.setPadding(0, 0, 16, 0)
-        cancelTV.setTypeface(null, Typeface.BOLD)
-        cancelTV.textSize = 14f
-        menu.add(0, 1, 1, "test").setActionView(cancelTV).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+        menu.add(0, 1, 1, "repos").setActionView(menuTextButtonInit()).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
     }
 
     //==============================================================================================
@@ -85,16 +94,24 @@ class ReposFragment : BaseFragment(R.layout.repos_fragment) {
     private fun observeState() {
         mViewModel.state().observe(viewLifecycleOwner) { state ->
 
-            mBinding.searchEditText.setTextIfDistinct(state.searchText)
-
-            if (shouldUpdateHistory(state)) {
-                mReposAdapter.applyDiffUtil(state.reposList)
-
-                if (state.hasReposItems()) {
-                    mBinding.emptyList.gone()
+            if (shouldUpdateProgress(state)) {
+                if (state.isProgress) {
+                    mBinding.progressBar.show()
                 } else {
-                    mBinding.emptyList.show()
+                    mBinding.progressBar.gone()
                 }
+
+            }
+
+            // Related to small api limit and the impossibility of making a request for every text change
+            mViewModel.onSearchTextChanged(mBinding.searchEditText.text.toString())
+
+            mReposAdapter.applyDiffUtil(state.reposList)
+
+            if (state.hasReposItems()) {
+                mBinding.emptyList.gone()
+            } else {
+                mBinding.emptyList.show()
             }
             if (shouldShowError(state))
                 showErrorMessage(state.errorMessage)
@@ -102,14 +119,10 @@ class ReposFragment : BaseFragment(R.layout.repos_fragment) {
         }
     }
 
-    private fun shouldUpdateHistory(state: ReposViewModel.State): Boolean {
-        if (mLastConsumedState == null) return true
-
-        return mLastConsumedState?.reposList != state.reposList
+    private fun shouldUpdateProgress(state: ReposViewModel.State): Boolean {
+        return state.isProgress != mLastConsumedState?.isProgress
     }
 
-
-    //todo change logic
     private fun shouldShowError(state: ReposViewModel.State): Boolean {
         if (state.errorMessage.isBlank()) return false
         if (mLastConsumedState == null) return true
@@ -122,4 +135,19 @@ class ReposFragment : BaseFragment(R.layout.repos_fragment) {
         mViewModel.errorMessageShown()
     }
 
+    //==============================================================================================
+    // *** Utils ***
+    //==============================================================================================
+
+    private fun menuTextButtonInit(): TextView {
+        return TextView(requireActivity()).apply {
+            text = requireContext().getString(R.string.history)
+            setTextColor(requireContext().getColor(R.color.white))
+            setOnClickListener { mViewModel.onHistoryButtonClicked() }
+            setPadding(0, 0, 16, 0)
+            setTypeface(null, Typeface.BOLD)
+            textSize = 14f
+        }
+
+    }
 }

@@ -45,13 +45,14 @@ class HistoryViewHolder(
     }
 
     private fun renderItem(item: HistoryItem) {
-        val context = mBinding.root.context
         mBinding.root.setOnClickListener {
             mContract?.onClickItem(item)
         }
         mBinding.title.text = item.fullName
         mBinding.description.text = item.description
         mBinding.stars.text = item.stargazersCount.toString()
+
+        mBinding.isSeen.visibility = View.GONE
     }
 
 }

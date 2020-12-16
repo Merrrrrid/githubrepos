@@ -2,9 +2,11 @@ package com.klymchuk.githubrepos.ui.main.repos.list
 
 import android.view.*
 import androidx.recyclerview.widget.RecyclerView
+import com.klymchuk.githubrepos.R
 import com.klymchuk.githubrepos.databinding.LiReposBinding
 import com.klymchuk.githubrepos.utils.Logger
 import com.klymchuk.githubrepos.utils.logTag
+import com.klymchuk.githubrepos.utils.thousandFormatter
 
 class ReposListViewHolder(
     private val mBinding: LiReposBinding,
@@ -51,7 +53,9 @@ class ReposListViewHolder(
         }
         mBinding.title.text = item.fullName
         mBinding.description.text = item.description
-        mBinding.stars.text = item.stargazersCount.toString()
+        mBinding.stars.text = context.getString(R.string.stars, item.stargazersCount.thousandFormatter())
+
+        mBinding.isSeen.visibility = if (item.isSeen) View.VISIBLE else View.GONE
     }
 
 }

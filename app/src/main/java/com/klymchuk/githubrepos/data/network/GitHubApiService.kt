@@ -3,7 +3,7 @@ package com.klymchuk.githubrepos.data.network
 import com.google.gson.GsonBuilder
 import com.klymchuk.githubrepos.BuildConfig
 import com.klymchuk.githubrepos.data.network.model.repos.ReposResult
-import io.reactivex.Observable
+import io.reactivex.Single
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -23,7 +23,7 @@ interface GitHubApiService {
         @Query("q") queryString: String,
         @Query("sort") sortString: String, //
         @Query("order") orderString: String, //desc
-    ): Observable<ReposResult>
+    ): Single<ReposResult>
 
     companion object {
         fun create(): GitHubApiService {

@@ -24,7 +24,6 @@ public abstract class ViewBindingProperty<in R : Any, T : ViewBinding>(
 
     @MainThread
     public override fun getValue(thisRef: R, property: KProperty<*>): T {
-//        checkIsMainThread()
         viewBinding?.let { return it }
 
         this.thisRef = thisRef
@@ -39,8 +38,6 @@ public abstract class ViewBindingProperty<in R : Any, T : ViewBinding>(
 
     @MainThread
     public fun clear() {
-//        checkIsMainThread()
-
         val thisRef = thisRef ?: return
         this.thisRef = null
         getLifecycleOwner(thisRef).lifecycle.removeObserver(lifecycleObserver)

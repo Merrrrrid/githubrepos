@@ -5,8 +5,7 @@ import com.klymchuk.githubrepos.data.network.GitHubApiService
 import com.klymchuk.githubrepos.data.network.GitHubAuthService
 import com.klymchuk.githubrepos.data.network.model.AccessToken
 import com.klymchuk.githubrepos.data.network.model.repos.ReposResult
-import com.klymchuk.githubrepos.utils.logTag
-import io.reactivex.Observable
+import io.reactivex.Single
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,30 +14,28 @@ class NetworkRepository @Inject constructor(
     private val gitHubApiService: GitHubApiService,
     private val gitHubAuthService: GitHubAuthService,
 ) {
-
-    init {
-
-    }
-
-    private val logTag = logTag()
-
     private val perPage = 15
     private val sort = "stars"
     private val order = "desc"
+    private var page: Int = 0
 
-    fun getAccessToken(code: String): Observable<AccessToken> {
+    fun getAccessToken(code: String): Single<AccessToken> {
         return gitHubAuthService.getAccessToken(BuildConfig.CLIENT_ID, BuildConfig.CLIENT_SECRET, code)
     }
 
-    fun getSearchReposResult(page: Int, queryString: String): Observable<ReposResult> {
+    fun getSearchReposResult(token: String, queryString: String): Single<ReposResult> {
         return gitHubApiService.searchRepos(
-            token = "bearer 03d00b3204afabada7ad5a821c93972c9b8f4d3c",
-            page = page,
+            token = token,
+            page = ++this.page,
             perPage = perPage,
             queryString = queryString,
             sortString = sort,
             orderString = order
         )
+    }
+
+    fun initPageToDefValue(){
+        page = 0
     }
 
 }

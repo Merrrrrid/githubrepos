@@ -1,16 +1,13 @@
 package com.klymchuk.githubrepos.ui.main.history
 
 import android.content.Context
-import android.content.Intent
-import android.graphics.Typeface
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
-import android.widget.TextView
 import android.widget.Toast
+import androidx.recyclerview.widget.RecyclerView
 import com.klymchuk.githubrepos.R
 import com.klymchuk.githubrepos.databinding.HistoryFragmentBinding
-import com.klymchuk.githubrepos.ui.MainActivity
 import com.klymchuk.githubrepos.ui.base.fragment.BaseFragment
 import com.klymchuk.githubrepos.ui.base.fragment.newViewModelWithArgs
 import com.klymchuk.githubrepos.ui.base.recyclerview.CustomLinearLayoutManager
@@ -21,13 +18,10 @@ import com.klymchuk.githubrepos.ui.main.history.list.HistoryViewHolder
 import com.klymchuk.githubrepos.utils.binding.viewBinding
 import com.klymchuk.githubrepos.utils.disableItemChangeAnimation
 import com.klymchuk.githubrepos.utils.gone
-import com.klymchuk.githubrepos.utils.logTag
 import com.klymchuk.githubrepos.utils.show
 
 
 class HistoryFragment : BaseFragment(R.layout.history_fragment) {
-
-    private val logTag = logTag()
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -53,10 +47,13 @@ class HistoryFragment : BaseFragment(R.layout.history_fragment) {
         setHasOptionsMenu(true)
         mViewModel.initBackButton()
 
+        //RecyclerView
         mBinding.historyRecyclerView.layoutManager = CustomLinearLayoutManager(requireContext())
         mBinding.historyRecyclerView.adapter = mHistoryAdapter
         mBinding.historyRecyclerView.disableItemChangeAnimation()
-
+        mBinding.historyRecyclerView.setRecycledViewPool(RecyclerView.RecycledViewPool().apply {
+            setMaxRecycledViews(HistoryAdapter.ViewType.HISTORY, 20)
+        })
         observeState()
 
         mViewModel.getHistory()
@@ -76,6 +73,12 @@ class HistoryFragment : BaseFragment(R.layout.history_fragment) {
         menu.clear()
     }
 
+    override fun onDestroyView() {
+        mViewModel.hideBackButton()
+        mLastConsumedState = null
+        super.onDestroyView()
+    }
+
     //==============================================================================================
     // *** State ***
     //==============================================================================================
@@ -84,14 +87,21 @@ class HistoryFragment : BaseFragment(R.layout.history_fragment) {
     private fun observeState() {
         mViewModel.state().observe(viewLifecycleOwner) { state ->
 
-            if (shouldUpdateHistory(state)) {
-                mHistoryAdapter.applyDiffUtil(state.historyList)
-
-                if (state.hasReposItems()) {
-                    mBinding.emptyList.gone()
+            if (shouldUpdateProgress(state)) {
+                if (state.isProgress) {
+                    mBinding.progressBar.show()
                 } else {
-                    mBinding.emptyList.show()
+                    mBinding.progressBar.gone()
                 }
+
+            }
+
+            mHistoryAdapter.applyDiffUtil(state.historyList)
+
+            if (state.hasReposItems()) {
+                mBinding.emptyList.gone()
+            } else {
+                mBinding.emptyList.show()
             }
             if (shouldShowError(state))
                 showErrorMessage(state.errorMessage)
@@ -99,13 +109,10 @@ class HistoryFragment : BaseFragment(R.layout.history_fragment) {
         }
     }
 
-    private fun shouldUpdateHistory(state: HistoryViewModel.State): Boolean {
-        if (mLastConsumedState == null) return true
-
-        return mLastConsumedState?.historyList != state.historyList
+    private fun shouldUpdateProgress(state: HistoryViewModel.State): Boolean {
+        return state.isProgress != mLastConsumedState?.isProgress
     }
 
-    //todo change logic
     private fun shouldShowError(state: HistoryViewModel.State): Boolean {
         if (state.errorMessage.isBlank()) return false
         if (mLastConsumedState == null) return true

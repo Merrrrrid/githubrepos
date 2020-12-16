@@ -5,12 +5,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.klymchuk.githubrepos.data.db.entity.History
 import com.klymchuk.githubrepos.data.repositories.DatabaseRepository
-import com.klymchuk.githubrepos.data.repositories.NetworkRepository
 import com.klymchuk.githubrepos.navigation.Router
 import com.klymchuk.githubrepos.ui.MainViewCommandProcessor
 import com.klymchuk.githubrepos.ui.base.commands.enqueue
 import com.klymchuk.githubrepos.ui.base.fragment.BaseViewModel
 import com.klymchuk.githubrepos.ui.main.history.list.HistoryItem
+import com.klymchuk.githubrepos.utils.Reporter
 import com.klymchuk.githubrepos.utils.logTag
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -20,7 +20,6 @@ import javax.inject.Inject
 class HistoryViewModel @Inject constructor(
     private val mRouter: Router,
     private val mDatabaseRepository: DatabaseRepository,
-    private val mNetworkRepository: NetworkRepository,
     private val mMainCommands: MainViewCommandProcessor,
 ) : BaseViewModel() {
 
@@ -43,7 +42,9 @@ class HistoryViewModel @Inject constructor(
         mState = MutableLiveData(State(historyList = listOf()))
     }
 
-    fun getHistory(){
+    fun getHistory() {
+        Reporter.appAction(logTag, "getHistory")
+
         val oldState = mState.value!!
         mState.value = oldState.copy(isProgress = true)
         val disposable: Disposable = mDatabaseRepository.getHistory()
@@ -52,7 +53,7 @@ class HistoryViewModel @Inject constructor(
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
                 {
-                    mState.value = oldState.copy(historyList = historyToHistoryItem(it))
+                    mState.value = oldState.copy(isProgress = false, historyList = historyToHistoryItem(it))
                 },
                 { error ->
                     mState.value = oldState.copy(isProgress = false, errorMessage = error.message.toString())
@@ -61,21 +62,31 @@ class HistoryViewModel @Inject constructor(
     }
 
     fun onListItemClick(item: HistoryItem) {
+        Reporter.userAction(logTag, "onListItemClick")
+
         mMainCommands.enqueue { it.openLinkInBrowser(Uri.parse(item.htmlUrl)) }
     }
 
     fun errorMessageShown() {
+        Reporter.appAction(logTag, "errorMessageShown")
+
         val oldState = mState.value!!
         mState.value = oldState.copy(errorMessage = "")
     }
 
-    fun onToolbarBackButtonClicked(){
-        mMainCommands.enqueue { it.hideBackButton() }
+    fun onToolbarBackButtonClicked() {
+        Reporter.userAction(logTag, "onToolbarBackButtonClicked")
+
+        hideBackButton()
         mRouter.back()
     }
 
-    fun initBackButton(){
+    fun initBackButton() {
         mMainCommands.enqueue { it.showBackButton() }
+    }
+
+    fun hideBackButton() {
+        mMainCommands.enqueue { it.hideBackButton() }
     }
 
     //==============================================================================================
@@ -84,7 +95,6 @@ class HistoryViewModel @Inject constructor(
 
     private fun historyToHistoryItem(historyList: List<History>): List<HistoryItem> {
         val list: MutableList<HistoryItem> = mutableListOf()
-
         historyList.forEach {
             list.add(
                 HistoryItem(

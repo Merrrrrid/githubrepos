@@ -1,6 +1,5 @@
 package com.klymchuk.githubrepos.data.network.model.repos
 
-
 import com.google.gson.annotations.SerializedName
 
 data class Owner(

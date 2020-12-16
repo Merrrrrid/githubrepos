@@ -21,8 +21,3 @@ fun modifierFade() = modifier { transaction, fragmentFrom, fragmentTo ->
     fragmentFrom?.applyFadeTransitions()
     fragmentTo.applyFadeTransitions()
 }
-
-fun modifierSlide() = modifier { transaction, fragmentFrom, fragmentTo ->
-    fragmentFrom?.applySlideTransitions()
-    fragmentTo.applySlideTransitions()
-}

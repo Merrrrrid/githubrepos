@@ -3,7 +3,7 @@ package com.klymchuk.githubrepos.data.network
 import com.google.gson.GsonBuilder
 import com.klymchuk.githubrepos.BuildConfig
 import com.klymchuk.githubrepos.data.network.model.AccessToken
-import io.reactivex.Observable
+import io.reactivex.Single
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -24,7 +24,7 @@ interface GitHubAuthService {
         @Field("client_id") clientId: String,
         @Field("client_secret") clientSecret: String,
         @Field("code") code: String
-    ): Observable<AccessToken>
+    ): Single<AccessToken>
 
     companion object {
         fun create(): GitHubAuthService {

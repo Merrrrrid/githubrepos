@@ -21,14 +21,6 @@ class ViewModelTracker @Inject constructor() {
     //==============================================================================================
     private val mSubscribers: MutableSet<Observer> = mutableSetOf()
 
-    fun subscribe(observer: Observer) {
-        mSubscribers.add(observer)
-    }
-
-    fun unsubscribe(observer: Observer) {
-        mSubscribers.remove(observer)
-    }
-
     private fun emit(event: Event, id: BaseViewModel) {
         mSubscribers.forEach { it.onEvent(event, id) }
     }
@@ -51,7 +43,4 @@ class ViewModelTracker @Inject constructor() {
         emit(Event.Destroyed, viewModel)
     }
 
-    fun getViewModels(): Set<BaseViewModel> {
-        return mViewModels
-    }
 }

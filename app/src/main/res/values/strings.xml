@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">GitHubRepos</string>
+    <string name="history">History</string>
+    <string name="login">Login</string>
+    <string name="list_empty">The repository list is empty</string>
+    <string name="stars">%s stars</string>
+    <string name="search">Search</string>
+    <string name="seen">Seen</string>
+    <string name="login_via_github_to_continue">Login via GitHub to continue</string>
+    <string name="title_label">Title</string>
+    <string name="description_label">Description</string>
 </resources>

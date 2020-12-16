@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.klymchuk.githubrepos.App
+import com.klymchuk.githubrepos.R
 import com.klymchuk.githubrepos.databinding.ActivityMainBinding
 import com.klymchuk.githubrepos.navigation.Destinations
 import com.klymchuk.githubrepos.navigation.Navigator
@@ -103,39 +104,9 @@ class MainActivity : AppCompatActivity(), GlobalFragmentContext {
     private fun initUI() {
         mNavigator.finishAppListener = object : Navigator.FinishAppListener {
             override fun onFinish(): Boolean {
-
                 return true
             }
         }
-
-        observeState()
-    }
-
-    //==============================================================================================
-    // *** State ***
-    //==============================================================================================
-    private var mLastConsumedState: MainViewModel.State? = null
-
-    private fun observeState() {
-        mViewModel.state().observe(this) { state ->
-            // Progress
-//            if (shouldUpdateProgress(state)) {
-//                if (state.isProgress) {
-//                    mBinding.progress.show()
-//                    window.setFlags(
-//                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-//                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-//                    )
-//                } else {
-//                    mBinding.progress.gone()
-//                    window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
-//                }
-//            }
-        }
-    }
-
-    private fun shouldUpdateProgress(state: MainViewModel.State): Boolean {
-        return state.isProgress != mLastConsumedState?.isProgress
     }
 
     //==============================================================================================
@@ -143,22 +114,32 @@ class MainActivity : AppCompatActivity(), GlobalFragmentContext {
     //==============================================================================================
 
     fun openLinkInBrowser(url : Uri){
+        Reporter.appAction(logTag, "openLinkInBrowser")
+
         startActivity(Intent(Intent.ACTION_VIEW, url))
     }
 
     fun showBackButton(){
+        Reporter.appAction(logTag, "showBackButton")
+
        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = getString(R.string.history)
     }
 
     fun hideBackButton(){
+        Reporter.appAction(logTag, "hideBackButton")
+
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
+        supportActionBar?.title = getString(R.string.app_name)
     }
 
     //==============================================================================================
     // *** Utils ***
     //==============================================================================================
 
-    private fun hideKeyboard() {
+    fun hideKeyboard() {
+        Reporter.appAction(logTag, "hideKeyboard")
+
         hideKeyboard(this, mBinding.root.windowToken)
     }
 

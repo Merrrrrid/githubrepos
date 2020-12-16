@@ -12,9 +12,4 @@ object Logger {
         Log.d(TAG, "$tag $message")
     }
 
-    fun e(tag: String, message: String, throwable: Throwable) {
-        if (!BuildConfig.DEBUG) return
-
-        Log.e(TAG, "$tag $message", throwable)
-    }
 }

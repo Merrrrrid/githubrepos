@@ -79,7 +79,6 @@ abstract class BaseFragment(@LayoutRes layout: Int = 0) : Fragment(layout), Glob
         Reporter.appAction(logTag, "onDestroyView")
     }
 
-
     //==============================================================================================
     // *** GlobalFragmentContext ***
     //==============================================================================================
@@ -101,13 +100,6 @@ fun Fragment.requireArgString(key: String): String {
     return arguments?.getString(key) ?: throw IllegalArgumentException("Missing arg: $key")
 }
 
-fun Fragment.requireArgBoolean(key: String): Boolean {
-    return arguments?.getBoolean(key) ?: throw IllegalArgumentException("Missing arg: $key")
-}
-
-/**
- * Instantiate ViewModel and set common arguments to it
- */
 inline fun <reified VM : BaseViewModel> BaseFragment.newViewModelWithArgs(): VM {
     return ViewModelProvider(this, viewModelFactory).get(VM::class.java).apply {
         setId(requireArgString(Destination.ARG_ID))

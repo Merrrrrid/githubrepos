@@ -17,6 +17,14 @@ class DatabaseRepository @Inject constructor(
         }
     }
 
+    fun getUser(): Single<User?>{
+        return mDatabase.userDao().getUser()
+    }
+
+    fun getUserToken(): Single<String?>{
+        return mDatabase.userDao().getUserToken()
+    }
+
     fun insertHistoryItem(history: History): Completable {
         return Completable.fromAction {
             mDatabase.historyDao().insertHistory(history)
@@ -25,6 +33,10 @@ class DatabaseRepository @Inject constructor(
 
     fun getHistory(): Single<List<History>> {
         return mDatabase.historyDao().getHistory()
+    }
+
+    fun getHistoryIds(): Single<List<Int>> {
+        return mDatabase.historyDao().getHistoryIds()
     }
 
 }

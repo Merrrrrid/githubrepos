@@ -13,6 +13,7 @@ import com.klymchuk.githubrepos.utils.Reporter
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.klymchuk.githubrepos.utils.logTag
+import com.klymchuk.githubrepos.utils.network.NetworkStatus
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
@@ -33,6 +34,7 @@ class LoginActivityViewModel @Inject constructor(
         val isProgress: Boolean = false,
         val token: String = "",
         val errorMessage: String = "",
+        val userFromDB: User? = null,
     )
 
     private val mState: MutableLiveData<State>
@@ -47,10 +49,15 @@ class LoginActivityViewModel @Inject constructor(
         mState = MutableLiveData(State())
     }
 
-    fun onLoginButtonClicked(){
+    fun onLoginButtonClicked() {
         Reporter.userAction(logTag, "onLoginButtonClicked")
 
-        mCommands.enqueue { it.navigateToGitHubLogin() }
+        if (NetworkStatus.isNetworkConnected) {
+            mCommands.enqueue { it.navigateToGitHubLogin() }
+        } else {
+            val oldState = mState.value!!
+            mState.value = oldState.copy(errorMessage = "Check your Internet connection")
+        }
     }
 
     fun onCodeRetrieve(code: String) {
@@ -65,7 +72,7 @@ class LoginActivityViewModel @Inject constructor(
         mState.value = oldState.copy(errorMessage = error)
     }
 
-    fun checkCodeOnResume(){
+    fun checkCodeOnResume() {
         mCommands.enqueue { it.checkIsCodeExist() }
     }
 
@@ -94,7 +101,7 @@ class LoginActivityViewModel @Inject constructor(
 
         val oldState = mState.value!!
         mState.value = oldState.copy(isProgress = true)
-        val disposable: Disposable = mDatabaseRepository.insertUser(User(token = "bearer ${oldState.token}"))
+        val disposable: Disposable = mDatabaseRepository.insertUser(User(token = oldState.token))
             .subscribeOn(Schedulers.io())
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
@@ -104,9 +111,34 @@ class LoginActivityViewModel @Inject constructor(
                     mCommands.enqueue { it.navigateToMainMenu() }
                 },
                 { error ->
-                    mState.value = oldState.copy(isProgress = false, errorMessage = error.message.toString())
+                    mState.value = oldState.copy(isProgress = false)
                 })
         mCompositeDisposable.add(disposable)
+    }
+
+    fun checkUserInDBOnStart() {
+        val oldState = mState.value!!
+        mState.value = oldState.copy(isProgress = true)
+        val disposable: Disposable = mDatabaseRepository.getUser()
+            .subscribeOn(Schedulers.io())
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                {
+                    mState.value = oldState.copy(isProgress = false, userFromDB = it)
+                },
+                { error ->
+                    mState.value = oldState.copy(isProgress = false)
+                })
+        mCompositeDisposable.add(disposable)
+
+    }
+
+    fun errorMessageShown() {
+        Reporter.appAction(logTag, "errorMessageShown")
+
+        val oldState = mState.value!!
+        mState.value = oldState.copy(errorMessage = "")
     }
 
 }

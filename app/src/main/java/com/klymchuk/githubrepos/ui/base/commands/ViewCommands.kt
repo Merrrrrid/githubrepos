@@ -19,13 +19,6 @@ inline fun <reified V> ViewCommandProcessor<V>.enqueue(crossinline command: (vie
     })
 }
 
-/**
- * Lifecycle-aware action processor. Executes actions when View is [Lifecycle.State.RESUMED]
- * or put them into queue and do it later.
- *
- * For stateless actions (Side Effects) e.g. showToast or hideKeyboard.
- * Replacement for so called "SingleLiveEvent" in MVVM
- */
 open class ViewCommandProcessor<View> : DefaultLifecycleObserver {
 
     private val logTag = logTag()
@@ -34,7 +27,6 @@ open class ViewCommandProcessor<View> : DefaultLifecycleObserver {
 
     @MainThread
     fun enqueue(command: Command<View>) {
-//        Logger.d(logTag, "enqueue")
         mCommands.add(command)
 
         if (mOwner?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true) {
@@ -43,8 +35,6 @@ open class ViewCommandProcessor<View> : DefaultLifecycleObserver {
     }
 
     private fun executeCommands() {
-//        Logger.d(logTag, "${mView!!::class.java.simpleName} executeCommands size: ${mCommands.size}")
-
         if (mCommands.isEmpty()) return
 
         val iterator = mCommands.iterator()
@@ -65,8 +55,6 @@ open class ViewCommandProcessor<View> : DefaultLifecycleObserver {
     private var mView: View? = null
 
     fun observe(owner: LifecycleOwner, view: View) {
-//        Logger.d(logTag, "observe ${view!!::class.java.simpleName}")
-
         if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) {
             return
         }

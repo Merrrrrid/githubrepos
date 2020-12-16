@@ -26,9 +26,7 @@ interface Navigation {
         class Replace(
             val destination: Destination,
             val modifier: Modifier? = null,
-        ) : Command() {
-            fun toAdd() = Add(destination, modifier)
-        }
+        ) : Command()
     }
 
     interface Modifier {

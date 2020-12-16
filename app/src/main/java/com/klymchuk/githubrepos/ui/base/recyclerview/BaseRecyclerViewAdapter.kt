@@ -7,13 +7,7 @@ import com.klymchuk.githubrepos.ui.base.recyclerview.items.RecyclerViewItem
 
 abstract class BaseRecyclerViewAdapter<Item : RecyclerViewItem>(
     var list: List<Item> = emptyList(),
-//    var contractError: ErrorViewHolder.Contract? = null
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-
-    companion object {
-        const val VIEW_TYPE_LOADING = 101
-        const val VIEW_TYPE_ERROR = 102
-    }
 
     protected var mInflater: LayoutInflater? = null
     protected var mRecyclerView: RecyclerView? = null
@@ -24,8 +18,6 @@ abstract class BaseRecyclerViewAdapter<Item : RecyclerViewItem>(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
-//            VIEW_TYPE_LOADING -> LoadingViewHolder.newInstance(mInflater!!, parent)
-//            VIEW_TYPE_ERROR -> ErrorViewHolder.newInstance(mInflater!!, parent, contractError)
 
             else -> throw IllegalArgumentException("Unknown ViewType: $viewType")
         }
@@ -35,9 +27,6 @@ abstract class BaseRecyclerViewAdapter<Item : RecyclerViewItem>(
         val item = getItem(position)
 
         when (item.getViewType()) {
-//            VIEW_TYPE_LOADING -> (holder as LoadingViewHolder).bind(item as LoadingItem, position)
-//            VIEW_TYPE_ERROR -> (holder as ErrorViewHolder).bind(item as ErrorItem, position)
-
             else -> throw IllegalArgumentException("Unknown ViewType: ${item.getViewType()}")
         }
     }
@@ -61,10 +50,6 @@ abstract class BaseRecyclerViewAdapter<Item : RecyclerViewItem>(
     interface AttachableToWindow {
         fun onAttachedToWindow()
         fun onDetachedFromWindow()
-    }
-
-    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
-        super.onViewRecycled(holder)
     }
 
     override fun onViewAttachedToWindow(holder: RecyclerView.ViewHolder) {

@@ -16,4 +16,7 @@ interface HistoryDao {
     @Query("SELECT * FROM history ORDER BY inputTimeStamp DESC LIMIT 20")
     fun getHistory() : Single<List<History>>
 
+    @Query("SELECT id FROM history")
+    fun getHistoryIds() : Single<List<Int>>
+
 }
