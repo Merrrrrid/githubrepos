@@ -3,11 +3,9 @@ package com.klymchuk.githubrepos.data.network
 import com.google.gson.GsonBuilder
 import com.klymchuk.githubrepos.BuildConfig
 import com.klymchuk.githubrepos.data.network.model.AccessToken
-import io.reactivex.Single
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
@@ -20,11 +18,11 @@ interface GitHubAuthService {
     @Headers("Accept: application/json")
     @POST("login/oauth/access_token")
     @FormUrlEncoded
-    fun getAccessToken(
+    suspend fun getAccessToken(
         @Field("client_id") clientId: String,
         @Field("client_secret") clientSecret: String,
         @Field("code") code: String
-    ): Single<AccessToken>
+    ): AccessToken
 
     companion object {
         fun create(): GitHubAuthService {
@@ -35,9 +33,6 @@ interface GitHubAuthService {
 
             val retrofit = Retrofit.Builder()
                 .client(createOkHttpClient())
-                .addCallAdapterFactory(
-                    RxJava2CallAdapterFactory.create()
-                )
                 .addConverterFactory(
                     GsonConverterFactory.create(gson)
                 )

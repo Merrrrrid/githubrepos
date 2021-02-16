@@ -1,15 +1,13 @@
 package com.klymchuk.githubrepos.ui.main.history
 
-import android.content.Context
 import android.view.Menu
 import android.view.MenuInflater
-import android.view.MenuItem
 import android.widget.Toast
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.RecyclerView
 import com.klymchuk.githubrepos.R
 import com.klymchuk.githubrepos.databinding.HistoryFragmentBinding
 import com.klymchuk.githubrepos.ui.base.fragment.BaseFragment
-import com.klymchuk.githubrepos.ui.base.fragment.newViewModelWithArgs
 import com.klymchuk.githubrepos.ui.base.recyclerview.CustomLinearLayoutManager
 import com.klymchuk.githubrepos.ui.base.recyclerview.applyDiffUtil
 import com.klymchuk.githubrepos.ui.main.history.list.HistoryAdapter
@@ -19,20 +17,13 @@ import com.klymchuk.githubrepos.utils.binding.viewBinding
 import com.klymchuk.githubrepos.utils.disableItemChangeAnimation
 import com.klymchuk.githubrepos.utils.gone
 import com.klymchuk.githubrepos.utils.show
+import dagger.hilt.android.AndroidEntryPoint
 
-
+@AndroidEntryPoint
 class HistoryFragment : BaseFragment(R.layout.history_fragment) {
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        mViewModel = newViewModelWithArgs()
-    }
-
-    //==============================================================================================
-    // *** UI ***
-    //==============================================================================================
     private val mBinding: HistoryFragmentBinding by viewBinding(HistoryFragmentBinding::bind)
-    private lateinit var mViewModel: HistoryViewModel
+    private val mViewModel: HistoryViewModel by viewModels()
     private lateinit var mHistoryAdapter: HistoryAdapter
 
     override fun initUI() {
@@ -45,7 +36,6 @@ class HistoryFragment : BaseFragment(R.layout.history_fragment) {
         )
 
         setHasOptionsMenu(true)
-        mViewModel.initBackButton()
 
         //RecyclerView
         mBinding.historyRecyclerView.layoutManager = CustomLinearLayoutManager(requireContext())
@@ -55,18 +45,6 @@ class HistoryFragment : BaseFragment(R.layout.history_fragment) {
             setMaxRecycledViews(HistoryAdapter.ViewType.HISTORY, 20)
         })
         observeState()
-
-        mViewModel.getHistory()
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            android.R.id.home -> {
-                mViewModel.onToolbarBackButtonClicked()
-                return true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -74,14 +52,10 @@ class HistoryFragment : BaseFragment(R.layout.history_fragment) {
     }
 
     override fun onDestroyView() {
-        mViewModel.hideBackButton()
         mLastConsumedState = null
         super.onDestroyView()
     }
 
-    //==============================================================================================
-    // *** State ***
-    //==============================================================================================
     private var mLastConsumedState: HistoryViewModel.State? = null
 
     private fun observeState() {

@@ -1,6 +1,8 @@
 package com.klymchuk.githubrepos.ui.main.history.list
 
-import android.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.klymchuk.githubrepos.databinding.LiReposBinding
 import com.klymchuk.githubrepos.utils.Logger

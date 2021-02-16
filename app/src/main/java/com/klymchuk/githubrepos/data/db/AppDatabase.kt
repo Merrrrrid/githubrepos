@@ -10,7 +10,8 @@ import com.klymchuk.githubrepos.data.db.entity.User
         User::class,
         History::class,
     ],
-    version = 1
+    version = 1,
+    exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao

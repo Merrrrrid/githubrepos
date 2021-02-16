@@ -1,6 +1,8 @@
 package com.klymchuk.githubrepos.ui.main.repos.list
 
-import android.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.klymchuk.githubrepos.R
 import com.klymchuk.githubrepos.databinding.LiReposBinding

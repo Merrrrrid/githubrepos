@@ -3,39 +3,33 @@ package com.klymchuk.githubrepos.data.repositories
 import com.klymchuk.githubrepos.data.db.AppDatabase
 import com.klymchuk.githubrepos.data.db.entity.History
 import com.klymchuk.githubrepos.data.db.entity.User
-import io.reactivex.Completable
-import io.reactivex.Single
 import javax.inject.Inject
 
 class DatabaseRepository @Inject constructor(
     private val mDatabase: AppDatabase,
 ) {
 
-    fun insertUser(user: User): Completable {
-        return Completable.fromAction {
-            mDatabase.userDao().insertUser(user)
-        }
+    suspend fun insertUser(user: User) {
+        mDatabase.userDao().insertUser(user)
     }
 
-    fun getUser(): Single<User?>{
+    suspend fun getUser(): User? {
         return mDatabase.userDao().getUser()
     }
 
-    fun getUserToken(): Single<String?>{
+    suspend fun getUserToken(): String?{
         return mDatabase.userDao().getUserToken()
     }
 
-    fun insertHistoryItem(history: History): Completable {
-        return Completable.fromAction {
+    suspend fun insertHistoryItem(history: History) {
             mDatabase.historyDao().insertHistory(history)
-        }
     }
 
-    fun getHistory(): Single<List<History>> {
+    suspend fun getHistory(): List<History> {
         return mDatabase.historyDao().getHistory()
     }
 
-    fun getHistoryIds(): Single<List<Int>> {
+    suspend fun getHistoryIds(): List<Int>{
         return mDatabase.historyDao().getHistoryIds()
     }
 

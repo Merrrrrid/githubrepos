@@ -47,10 +47,6 @@ open class ViewCommandProcessor<View> : DefaultLifecycleObserver {
 
     }
 
-
-    //==============================================================================================
-    // *** Lifecycle ***
-    //==============================================================================================
     private var mOwner: LifecycleOwner? = null
     private var mView: View? = null
 

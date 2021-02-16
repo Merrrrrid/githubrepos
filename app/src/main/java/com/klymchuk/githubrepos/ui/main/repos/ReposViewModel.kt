@@ -1,16 +1,16 @@
 package com.klymchuk.githubrepos.ui.main.repos
 
-import android.net.Uri
+import androidx.hilt.lifecycle.ViewModelInject
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import com.klymchuk.githubrepos.data.db.entity.History
 import com.klymchuk.githubrepos.data.network.model.repos.ReposItem
 import com.klymchuk.githubrepos.data.repositories.DatabaseRepository
 import com.klymchuk.githubrepos.data.repositories.NetworkRepository
-import com.klymchuk.githubrepos.navigation.Destinations
-import com.klymchuk.githubrepos.navigation.Router
-import com.klymchuk.githubrepos.navigation.modifierFade
 import com.klymchuk.githubrepos.ui.MainViewCommandProcessor
+import com.klymchuk.githubrepos.ui.base.commands.ViewCommandProcessor
 import com.klymchuk.githubrepos.ui.base.commands.enqueue
 import com.klymchuk.githubrepos.ui.base.fragment.BaseViewModel
 import com.klymchuk.githubrepos.ui.main.repos.list.ReposListItem
@@ -18,14 +18,11 @@ import com.klymchuk.githubrepos.utils.Reporter
 import com.klymchuk.githubrepos.utils.logTag
 import com.klymchuk.githubrepos.utils.network.NetworkStatus
 import com.klymchuk.githubrepos.utils.tokenFormatter
-import io.reactivex.Single
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.schedulers.Schedulers
-import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class ReposViewModel @Inject constructor(
-    private val mRouter: Router,
+class ReposViewModel @ViewModelInject constructor(
     private val mDatabaseRepository: DatabaseRepository,
     private val mNetworkRepository: NetworkRepository,
     private val mMainCommands: MainViewCommandProcessor,
@@ -48,6 +45,11 @@ class ReposViewModel @Inject constructor(
         }
     }
 
+    private val mCommands: ViewCommandProcessor<ReposFragment> = ViewCommandProcessor()
+    fun observeCommands(owner: LifecycleOwner, view: ReposFragment) {
+        mCommands.observe(owner, view)
+    }
+
     private val mState: MutableLiveData<State>
     fun state(): LiveData<State> = mState
 
@@ -56,54 +58,23 @@ class ReposViewModel @Inject constructor(
         getUserPrefs()
     }
 
-    data class UserPrefs(
-        val token: String,
-        val historyList: List<Int>,
-    )
-
-    private fun getUserPrefZipSingle(): Single<UserPrefs> {
-        Reporter.appAction(logTag, "getUserPrefZip")
-
-        return Single.zip(
-            mDatabaseRepository.getHistoryIds(),
-            mDatabaseRepository.getUserToken(),
-            { t, u ->
-                val userPrefs = UserPrefs(u, t)
-                userPrefs
-            })
-    }
-
     private fun getUserPrefs() {
         Reporter.appAction(logTag, "getUserPrefs")
 
         val oldState = mState.value!!
         mState.value = oldState.copy(isProgress = true)
-        val disposable: Disposable = getUserPrefZipSingle()
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                {
-                    mState.value = oldState.copy(isProgress = false, token = it.token.tokenFormatter(), historyList = it.historyList.toMutableList())
-                },
-                { error ->
-                    mState.value = oldState.copy(isProgress = false, errorMessage = error.message.toString())
-                })
-        mCompositeDisposable.add(disposable)
-    }
 
-    private fun getSingleZipQueries(queryString: String): Single<List<ReposItem>> {
-        Reporter.appAction(logTag, "getSingleZipQueries")
 
-        val oldState = mState.value!!
-        return Single.zip(
-            mNetworkRepository.getSearchReposResult(oldState.token, queryString),
-            mNetworkRepository.getSearchReposResult(oldState.token, queryString),
-            { t, u ->
-                val reposItems = mutableListOf<ReposItem>()
-                reposItems.addAll(t.reposItems)
-                reposItems.addAll(u.reposItems)
-                reposItems
-            })
+        viewModelScope.launch(Dispatchers.IO) {
+
+            val historyIds: List<Int> = mDatabaseRepository.getHistoryIds()
+            val userToken: String? = mDatabaseRepository.getUserToken()
+
+            withContext(Dispatchers.Main) {
+                mState.value = oldState.copy(isProgress = false, token = userToken.orEmpty().tokenFormatter(), historyList = historyIds.toMutableList())
+            }
+        }
+
     }
 
     private fun getSearchRepos(queryString: String) {
@@ -115,18 +86,13 @@ class ReposViewModel @Inject constructor(
 
             mNetworkRepository.initPageToDefValue()
 
-            val disposable: Disposable = getSingleZipQueries(queryString)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                    { result ->
-                        mState.value = oldState.copy(isProgress = false, reposList = reposToRecycleItem(oldState, result), isLoadListEmpty = result.isEmpty())
-                    },
-                    { error ->
-                        mState.value = oldState.copy(isProgress = false, errorMessage = error.message.toString())
-                    }
-                )
-            mCompositeDisposable.add(disposable)
+            viewModelScope.launch(Dispatchers.IO){
+                val result = mNetworkRepository.getSearchReposResult(oldState.token, queryString)
+                withContext(Dispatchers.Main){
+                    mState.value = oldState.copy(isProgress = false, reposList = reposToRecycleItem(oldState, result.reposItems), isLoadListEmpty = result.reposItems.isEmpty())
+                }
+            }
+
         } else {
             val oldState = mState.value!!
             mState.value = oldState.copy(errorMessage = "Check your Internet connection")
@@ -139,20 +105,15 @@ class ReposViewModel @Inject constructor(
             val oldState = mState.value!!
             mState.value = oldState.copy(isProgress = true)
 
-            val disposable: Disposable = getSingleZipQueries(oldState.searchText)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                    { result ->
-                        val newList = oldState.reposList.toMutableList()
-                        newList.addAll(reposToRecycleItem(oldState, result))
-                        mState.value = oldState.copy(isProgress = false, reposList = newList, isLoadListEmpty = result.isEmpty())
-                    },
-                    { error ->
-                        mState.value = oldState.copy(isProgress = false, errorMessage = error.message.toString())
-                    }
-                )
-            mCompositeDisposable.add(disposable)
+            viewModelScope.launch(Dispatchers.IO){
+                val result = mNetworkRepository.getSearchReposResult(oldState.token, oldState.searchText)
+                withContext(Dispatchers.Main){
+                    val newList = oldState.reposList.toMutableList()
+                    newList.addAll(reposToRecycleItem(oldState, result.reposItems))
+                    mState.value = oldState.copy(isProgress = false, reposList = newList, isLoadListEmpty = result.reposItems.isEmpty())
+                }
+            }
+
         } else {
             val oldState = mState.value!!
             mState.value = oldState.copy(errorMessage = "Check your Internet connection")
@@ -181,33 +142,36 @@ class ReposViewModel @Inject constructor(
             mState.value = oldState.copy(historyList = oldState.historyList, reposList = oldState.reposList)
         }
 
-        val disposable: Disposable = mDatabaseRepository.insertHistoryItem(
-            History(
-                id = item.id,
-                htmlUrl = item.htmlUrl,
-                fullName = item.fullName,
-                description = item.description,
-                stargazersCount = item.stargazersCount,
-                inputTimeStamp = (System.currentTimeMillis() / 1000).toString()
+        viewModelScope.launch(Dispatchers.IO) {
+
+            mDatabaseRepository.insertHistoryItem(
+                History(
+                    id = item.id,
+                    htmlUrl = item.htmlUrl,
+                    fullName = item.fullName,
+                    description = item.description,
+                    stargazersCount = item.stargazersCount,
+                    inputTimeStamp = (System.currentTimeMillis() / 1000).toString()
+                )
             )
-        )
-            .subscribeOn(Schedulers.io())
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                {
-                    mState.value = oldState.copy(isProgress = false)
-                },
-                { error ->
-                    mState.value = oldState.copy(isProgress = false, errorMessage = error.message.toString())
-                })
-        mCompositeDisposable.add(disposable)
+
+            withContext(Dispatchers.Main) {
+                mState.value = oldState.copy(isProgress = false)
+            }
+        }
+
+    }
+
+    fun onHistoryButtonClicked() {
+        Reporter.userAction(logTag, "onHistoryButtonClicked")
+
+        mCommands.enqueue { it.navigateToHistory() }
     }
 
     fun onListItemClick(item: ReposListItem) {
         Reporter.userAction(logTag, "onListItemClick")
 
-        mMainCommands.enqueue { it.openLinkInBrowser(Uri.parse(item.htmlUrl)) }
+        mMainCommands.enqueue { it.navigateToRepoDetails(item.htmlUrl, item.fullName) }
         saveHistoryItem(item)
     }
 
@@ -225,20 +189,12 @@ class ReposViewModel @Inject constructor(
         mState.value = oldState.copy(reposList = mutableListOf())
     }
 
-    fun onHistoryButtonClicked() {
-        Reporter.userAction(logTag, "onHistoryButtonClicked")
-
-        mRouter.add(Destinations.history(), modifierFade())
-        mMainCommands.enqueue { it.hideKeyboard() }
-    }
-
     fun onSearchTextChanged(text: String) {
         Reporter.appAction(logTag, "onSearchTextChanged")
 
         val oldState = mState.value!!
 
         if (oldState.searchText == text) return
-        // Related to small api limit and the impossibility of making a request for every text change
         if (oldState.isProgress) return
 
         mState.value = oldState.copy(searchText = text)
@@ -248,10 +204,6 @@ class ReposViewModel @Inject constructor(
         else
             onEmptySearchText()
     }
-
-    //==============================================================================================
-    // *** Utils ***
-    //==============================================================================================
 
     private fun reposToRecycleItem(state: State, reposItemList: List<ReposItem>): MutableList<ReposListItem> {
         val list: MutableList<ReposListItem> = mutableListOf()
@@ -264,7 +216,7 @@ class ReposViewModel @Inject constructor(
                     fullName = it.fullName,
                     description = it.description.orEmpty(),
                     stargazersCount = it.stargazersCount,
-                    isSeen = state.historyList.contains(it.id)
+                    isSeen = false//state.historyList.contains(it.id)
                 )
             )
         }

@@ -1,24 +1,22 @@
 package com.klymchuk.githubrepos.ui.main.history
 
-import android.net.Uri
+import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import com.klymchuk.githubrepos.data.db.entity.History
 import com.klymchuk.githubrepos.data.repositories.DatabaseRepository
-import com.klymchuk.githubrepos.navigation.Router
 import com.klymchuk.githubrepos.ui.MainViewCommandProcessor
 import com.klymchuk.githubrepos.ui.base.commands.enqueue
 import com.klymchuk.githubrepos.ui.base.fragment.BaseViewModel
 import com.klymchuk.githubrepos.ui.main.history.list.HistoryItem
 import com.klymchuk.githubrepos.utils.Reporter
 import com.klymchuk.githubrepos.utils.logTag
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.schedulers.Schedulers
-import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class HistoryViewModel @Inject constructor(
-    private val mRouter: Router,
+class HistoryViewModel @ViewModelInject constructor(
     private val mDatabaseRepository: DatabaseRepository,
     private val mMainCommands: MainViewCommandProcessor,
 ) : BaseViewModel() {
@@ -40,31 +38,30 @@ class HistoryViewModel @Inject constructor(
 
     init {
         mState = MutableLiveData(State(historyList = listOf()))
+        getHistory()
     }
 
-    fun getHistory() {
+    private fun getHistory() {
         Reporter.appAction(logTag, "getHistory")
 
         val oldState = mState.value!!
         mState.value = oldState.copy(isProgress = true)
-        val disposable: Disposable = mDatabaseRepository.getHistory()
-            .subscribeOn(Schedulers.io())
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                {
-                    mState.value = oldState.copy(isProgress = false, historyList = historyToHistoryItem(it))
-                },
-                { error ->
-                    mState.value = oldState.copy(isProgress = false, errorMessage = error.message.toString())
-                })
-        mCompositeDisposable.add(disposable)
+
+        viewModelScope.launch(Dispatchers.IO) {
+
+            val history: List<History> = mDatabaseRepository.getHistory()
+
+            withContext(Dispatchers.Main) {
+                mState.value = oldState.copy(isProgress = false, historyList = historyToHistoryItem(history))
+            }
+        }
+
     }
 
     fun onListItemClick(item: HistoryItem) {
         Reporter.userAction(logTag, "onListItemClick")
 
-        mMainCommands.enqueue { it.openLinkInBrowser(Uri.parse(item.htmlUrl)) }
+        mMainCommands.enqueue { it.navigateToRepoDetails(item.htmlUrl, item.fullName) }
     }
 
     fun errorMessageShown() {
@@ -73,25 +70,6 @@ class HistoryViewModel @Inject constructor(
         val oldState = mState.value!!
         mState.value = oldState.copy(errorMessage = "")
     }
-
-    fun onToolbarBackButtonClicked() {
-        Reporter.userAction(logTag, "onToolbarBackButtonClicked")
-
-        hideBackButton()
-        mRouter.back()
-    }
-
-    fun initBackButton() {
-        mMainCommands.enqueue { it.showBackButton() }
-    }
-
-    fun hideBackButton() {
-        mMainCommands.enqueue { it.hideBackButton() }
-    }
-
-    //==============================================================================================
-    // *** Utils ***
-    //==============================================================================================
 
     private fun historyToHistoryItem(historyList: List<History>): List<HistoryItem> {
         val list: MutableList<HistoryItem> = mutableListOf()

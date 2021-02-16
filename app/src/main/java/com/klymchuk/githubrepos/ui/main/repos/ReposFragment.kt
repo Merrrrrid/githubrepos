@@ -1,44 +1,39 @@
 package com.klymchuk.githubrepos.ui.main.repos
 
-import android.content.Context
 import android.graphics.Typeface
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.widget.doOnTextChanged
+import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.klymchuk.githubrepos.R
 import com.klymchuk.githubrepos.databinding.ReposFragmentBinding
 import com.klymchuk.githubrepos.ui.base.fragment.BaseFragment
-import com.klymchuk.githubrepos.ui.base.fragment.newViewModelWithArgs
 import com.klymchuk.githubrepos.ui.base.recyclerview.CustomLinearLayoutManager
 import com.klymchuk.githubrepos.ui.base.recyclerview.applyDiffUtil
 import com.klymchuk.githubrepos.ui.main.repos.list.ReposAdapter
 import com.klymchuk.githubrepos.ui.main.repos.list.ReposListItem
 import com.klymchuk.githubrepos.ui.main.repos.list.ReposListViewHolder
-import com.klymchuk.githubrepos.utils.*
+import com.klymchuk.githubrepos.utils.DebouncingQueryTextListener
 import com.klymchuk.githubrepos.utils.binding.viewBinding
+import com.klymchuk.githubrepos.utils.disableItemChangeAnimation
+import com.klymchuk.githubrepos.utils.gone
+import com.klymchuk.githubrepos.utils.show
+import dagger.hilt.android.AndroidEntryPoint
 
-
+@AndroidEntryPoint
 class ReposFragment : BaseFragment(R.layout.repos_fragment) {
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        mViewModel = newViewModelWithArgs()
-    }
 
     override fun onDestroyView() {
         mLastConsumedState = null
         super.onDestroyView()
     }
 
-    //==============================================================================================
-    // *** UI ***
-    //==============================================================================================
     private val mBinding: ReposFragmentBinding by viewBinding(ReposFragmentBinding::bind)
-    private lateinit var mViewModel: ReposViewModel
+    private  val mViewModel: ReposViewModel by viewModels()
     private lateinit var mReposAdapter: ReposAdapter
 
     override fun initUI() {
@@ -72,12 +67,17 @@ class ReposFragment : BaseFragment(R.layout.repos_fragment) {
             }
         })
 
-        mBinding.searchEditText.apply {
-            addTextChangedListener(doOnTextChanged { text, _, _, _ ->
-                mViewModel.onSearchTextChanged(text.toString())
-            })
-        }
+        mBinding.searchView.setOnQueryTextListener(
+            DebouncingQueryTextListener(
+                lifecycle
+            ) { newText ->
+                newText?.let {
+                    mViewModel.onSearchTextChanged(it)
+                }
+            }
+        )
 
+        mViewModel.observeCommands(viewLifecycleOwner, this)
         observeState()
     }
 
@@ -86,9 +86,6 @@ class ReposFragment : BaseFragment(R.layout.repos_fragment) {
         menu.add(0, 1, 1, "repos").setActionView(menuTextButtonInit()).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
     }
 
-    //==============================================================================================
-    // *** State ***
-    //==============================================================================================
     private var mLastConsumedState: ReposViewModel.State? = null
 
     private fun observeState() {
@@ -102,9 +99,6 @@ class ReposFragment : BaseFragment(R.layout.repos_fragment) {
                 }
 
             }
-
-            // Related to small api limit and the impossibility of making a request for every text change
-            mViewModel.onSearchTextChanged(mBinding.searchEditText.text.toString())
 
             mReposAdapter.applyDiffUtil(state.reposList)
 
@@ -135,10 +129,6 @@ class ReposFragment : BaseFragment(R.layout.repos_fragment) {
         mViewModel.errorMessageShown()
     }
 
-    //==============================================================================================
-    // *** Utils ***
-    //==============================================================================================
-
     private fun menuTextButtonInit(): TextView {
         return TextView(requireActivity()).apply {
             text = requireContext().getString(R.string.history)
@@ -150,4 +140,10 @@ class ReposFragment : BaseFragment(R.layout.repos_fragment) {
         }
 
     }
+
+    fun navigateToHistory() {
+        val action = ReposFragmentDirections.actionReposFragmentToHistoryFragment()
+        findNavController().navigate(action)
+    }
+
 }

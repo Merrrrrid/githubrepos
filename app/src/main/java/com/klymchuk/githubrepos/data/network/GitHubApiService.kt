@@ -3,27 +3,27 @@ package com.klymchuk.githubrepos.data.network
 import com.google.gson.GsonBuilder
 import com.klymchuk.githubrepos.BuildConfig
 import com.klymchuk.githubrepos.data.network.model.repos.ReposResult
-import io.reactivex.Single
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.*
+import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.Query
 import java.util.concurrent.TimeUnit
 
 
 interface GitHubApiService {
 
     @GET("/search/repositories")
-    fun searchRepos(
+    suspend fun searchRepos(
         @Header("Authorization") token: String,
         @Query("page") page: Int,
         @Query("per_page") perPage: Int, //15
         @Query("q") queryString: String,
         @Query("sort") sortString: String, //
         @Query("order") orderString: String, //desc
-    ): Single<ReposResult>
+    ): ReposResult
 
     companion object {
         fun create(): GitHubApiService {
@@ -34,9 +34,6 @@ interface GitHubApiService {
 
             val retrofit = Retrofit.Builder()
                 .client(createOkHttpClient())
-                .addCallAdapterFactory(
-                    RxJava2CallAdapterFactory.create()
-                )
                 .addConverterFactory(
                     GsonConverterFactory.create(gson)
                 )
